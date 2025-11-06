@@ -25,7 +25,7 @@
         <div class="vertical-divider"></div>
         <div class="right-section">
           <div class="spacecraft-container">
-            <img src="/images/spacecraft.png" alt="XL-15 Spaceship" class="spacecraft-image" />
+            <img :src="`${$baseUrl}images/spacecraft.png`" alt="XL-15 Spaceship" class="spacecraft-image" />
           </div>
         </div>
       </div>
@@ -43,7 +43,7 @@
           >
             <img 
               v-if="imageLoaded[number]" 
-              :src="`/images/${number}.png`" 
+              :src="`${$baseUrl}images/${number}.png`" 
               :alt="`Spaceship ${number}`"
               @error="handleImageError(number)"
             />
@@ -121,7 +121,7 @@ export default {
     const loadImages = () => {
       for (let i = 1; i <= 25; i++) {
         const img = new Image()
-        img.src = `/images/${i}.png`
+        img.src = `${import.meta.env.BASE_URL}images/${i}.png`
         
         img.onload = () => {
           imageLoaded.value[i] = true
@@ -201,7 +201,7 @@ export default {
           const loader = new OBJLoader()
           
           loader.load(
-            `/images/3D/${number}.obj`,
+            `${import.meta.env.BASE_URL}images/3D/${number}.obj`,
             (object) => {
               // Successfully loaded OBJ file
               model = object
@@ -320,7 +320,8 @@ export default {
       handleImageError,
       openModal,
       closeModal,
-      toggleRotation
+      toggleRotation,
+      $baseUrl: import.meta.env.BASE_URL
     }
   }
 }
