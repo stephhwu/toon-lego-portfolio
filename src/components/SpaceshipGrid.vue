@@ -25,7 +25,7 @@
         <div class="vertical-divider"></div>
         <div class="right-section">
           <div class="spacecraft-container">
-            <img :src="`${$baseUrl}images/spacecraft.png`" alt="XL-15 Spaceship" class="spacecraft-image" />
+            <img :src="spacecraftImageUrl" alt="XL-15 Spaceship" class="spacecraft-image" />
           </div>
         </div>
       </div>
@@ -43,7 +43,7 @@
           >
             <img 
               v-if="imageLoaded[number]" 
-              :src="`${$baseUrl}images/${number}.png`" 
+              :src="getImageUrl(number)" 
               :alt="`Spaceship ${number}`"
               @error="handleImageError(number)"
             />
@@ -102,7 +102,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import * as THREE from 'three'
 import { OBJLoader } from 'three-stdlib'
 
@@ -118,10 +118,15 @@ export default {
     // Three.js variables
     let scene, camera, renderer, model, animationId
 
+    // Computed properties for image paths
+    const baseUrl = computed(() => import.meta.env.BASE_URL)
+    const spacecraftImageUrl = computed(() => `${baseUrl.value}images/spacecraft.png`)
+    const getImageUrl = (number) => `${baseUrl.value}images/${number}.png`
+
     const loadImages = () => {
       for (let i = 1; i <= 25; i++) {
         const img = new Image()
-        img.src = `${import.meta.env.BASE_URL}images/${i}.png`
+        img.src = `${baseUrl.value}images/${i}.png`
         
         img.onload = () => {
           imageLoaded.value[i] = true
@@ -201,7 +206,7 @@ export default {
           const loader = new OBJLoader()
           
           loader.load(
-            `${import.meta.env.BASE_URL}images/3D/${number}.obj`,
+            `${baseUrl.value}images/3D/${number}.obj`,
             (object) => {
               // Successfully loaded OBJ file
               model = object
@@ -321,7 +326,9 @@ export default {
       openModal,
       closeModal,
       toggleRotation,
-      $baseUrl: import.meta.env.BASE_URL
+      baseUrl,
+      spacecraftImageUrl,
+      getImageUrl
     }
   }
 }
