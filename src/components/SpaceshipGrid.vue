@@ -1,14 +1,15 @@
 <template>
   <div class="spaceship-page">
-    <div class="background-grid"></div>
-    
-    <div class="header">
-      <h1>25 or 01</h1>
-      <h2>How Many Spaceships are in a Spaceship?</h2>
-      <p>This project explores the idea of creating multiple unique builds from a single LEGO set. My goal was to challenge myself to design several different micro spaceships using only the pieces from set no. 76832.</p>
-    </div>
+    <div class="background-content" :class="{ 'modal-open': showModal }">
+      <div class="background-grid"></div>
+      
+      <div class="header">
+        <h1>25 or 01</h1>
+        <h2>How Many Spaceships are in a Spaceship?</h2>
+        <p>This project explores the idea of creating multiple unique builds from a single LEGO set. My goal was to challenge myself to design several different micro spaceships using only the pieces from set no. 76832.</p>
+      </div>
 
-    <div class="info-card">
+      <div class="info-card">
       <div class="card-content">
         <div class="left-section">
           <div class="card-title">XL - 15 SPACESHIP</div>
@@ -52,6 +53,7 @@
         </div>
       </div>
     </div>
+    </div> <!-- End background-content -->
 
     <!-- 3D Modal -->
     <div v-if="showModal" class="modal-overlay" @click="closeModal">
@@ -194,7 +196,7 @@ export default {
 
       // Scene
       scene = new THREE.Scene()
-      scene.background = new THREE.Color(0x6c7074)
+      scene.background = null // Transparent scene background
 
       // Camera
       camera = new THREE.PerspectiveCamera(
@@ -206,8 +208,12 @@ export default {
       camera.position.set(0, 0, 5)
 
       // Renderer
-      renderer = new THREE.WebGLRenderer({ antialias: true })
+      renderer = new THREE.WebGLRenderer({ 
+        antialias: true, 
+        alpha: true // Enable transparency
+      })
       renderer.setSize(500, 500) // Fixed size for now
+      renderer.setClearColor(0xffffff, 0.12) // White with 20% opacity
       renderer.shadowMap.enabled = true
       renderer.shadowMap.type = THREE.PCFSoftShadowMap
       
@@ -374,6 +380,15 @@ export default {
   min-height: 100vh;
   position: relative;
   padding-bottom: min(270px, 36vw, 36vh);
+}
+
+/* Background content wrapper */
+.background-content {
+  transition: opacity 0.3s ease;
+}
+
+.background-content.modal-open {
+  opacity: 0.2;
 }
 
 /* Background grid - extends to edges, always square cells */
@@ -694,7 +709,6 @@ export default {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -702,7 +716,7 @@ export default {
 }
 
 .modal-content {
-  background: #6c7074;
+  background: rgba(55, 66, 74, 0.8);
   width: 80vh;
   height: 80vh;
   max-width: 880px;
@@ -777,6 +791,7 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 60px 20px 20px 20px;
+  border-radius: 4px;
 }
 
 .model-viewer {
@@ -790,17 +805,23 @@ export default {
 
 /* Bottom Info Section */
 .modal-footer {
-  background: rgba(0, 0, 0, 0.3);
   padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: center;
 }
 
 .model-info-card {
+  width: 735px;
+  height: 137px;
+  border: 0.4px solid rgba(255, 255, 255, 1);
+  border-radius: 4px;
+  padding: 20px;
   display: grid;
   grid-template-columns: 1fr 1fr auto;
   grid-template-rows: auto auto auto;
   gap: 15px;
   align-items: start;
+  background: transparent;
 }
 
 .model-name {
@@ -809,6 +830,7 @@ export default {
   font-weight: bold;
   letter-spacing: 1px;
   margin-bottom: 5px;
+  color: white;
 }
 
 .model-details {
@@ -852,7 +874,7 @@ export default {
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.4;
   margin: 0;
-  padding-left: 20px;
+  padding: 0;
 }
 
 .technical-drawing {
@@ -865,7 +887,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: transparent;
 }
 
 .technical-drawing img {
