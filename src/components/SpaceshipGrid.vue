@@ -56,45 +56,51 @@
     <!-- 3D Modal -->
     <div v-if="showModal" class="modal-overlay" @click="closeModal">
       <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h2>Transporter</h2>
-          <button class="close-btn" @click="closeModal">×</button>
-        </div>
+        <!-- Play/Pause Button - Top Left -->
+        <button @click="toggleRotation" class="play-pause-control">
+          <img :src="`${baseUrl}images/icons/${isRotating ? 'pause' : 'play'}.png`" alt="Play/Pause" class="control-icon">
+          {{ isRotating ? 'PAUSE' : 'PLAY' }} II
+        </button>
         
-        <div class="modal-body">
+        <!-- Close Button - Top Right -->
+        <button class="close-btn" @click="closeModal">×</button>
+        
+        <!-- 3D Model Viewer - Centered -->
+        <div class="model-viewer-container">
           <div class="model-viewer" ref="modelViewer">
             <!-- 3D model will be rendered here -->
           </div>
-          
-          <div class="modal-info">
-            <div class="info-section">
-              <div class="var-section">
-                <span class="label">VAR NO.</span>
-                <span class="value">{{ String(selectedModel).padStart(3, '0') }}</span>
-                <div class="color-bar-modal"></div>
-              </div>
-              
-              <div class="description-section">
-                <span class="label">Description:</span>
-                <div class="pieces-section">
-                  <span class="label">Pieces:</span>
-                  <span class="value">28</span>
-                </div>
-              </div>
-              
-              <div class="diagrams-section">
-                <!-- Placeholder for diagrams -->
-                <div class="diagram-placeholder"></div>
-                <div class="diagram-placeholder"></div>
-              </div>
-            </div>
-          </div>
         </div>
         
-        <div class="modal-controls">
-          <button @click="toggleRotation" class="play-pause-btn">
-            {{ isRotating ? 'PAUSE' : 'PLAY' }}
-          </button>
+        <!-- Bottom Info Section -->
+        <div class="modal-footer">
+          <div class="model-info-card">
+            <div class="model-name">{{ getModelInfo(selectedModel).name }}</div>
+            <div class="model-details">
+              <div class="detail-item">
+                <span class="detail-label">VAR NO.</span>
+                <span class="detail-value">{{ String(selectedModel).padStart(2, '0') }}</span>
+              </div>
+              <div class="color-bar-modal"></div>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Description:</span>
+              <p class="description-text">{{ getModelInfo(selectedModel).description }}</p>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Pieces:</span>
+              <span class="detail-value pieces-count">28</span>
+            </div>
+            
+            <!-- Technical Drawing -->
+            <div class="technical-drawing">
+              <img :src="`${baseUrl}images/vectors/${selectedModel}.svg`" 
+                   :alt="`Technical drawing of ${getModelInfo(selectedModel).name}`"
+                   @error="handleVectorError">
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -117,6 +123,25 @@ export default {
     
     // Three.js variables
     let scene, camera, renderer, model, animationId
+
+    // Model data structure
+    const modelData = ref({
+      1: { name: 'Transporter', description: 'A fast interceptor spacecraft. Optimized for air-to-air combat. Designed for maximum speed and maneuverability.' },
+      2: { name: 'Fighter', description: 'Compact fighter craft with enhanced weapons systems.' },
+      3: { name: 'Scout', description: 'Reconnaissance vessel with advanced sensor array.' },
+      4: { name: 'Bomber', description: 'Heavy assault craft for strategic missions.' },
+      5: { name: 'Shuttle', description: 'Multipurpose transport vehicle.' },
+      // Add more as needed...
+      21: { name: 'Interceptor', description: 'Advanced fighter with stealth capabilities.' },
+      // Default for unspecified models
+    })
+
+    const getModelInfo = (number) => {
+      return modelData.value[number] || { 
+        name: `Model ${number}`, 
+        description: 'Advanced LEGO spacecraft design with modular components.' 
+      }
+    }
 
     // Computed properties for image paths
     const baseUrl = computed(() => import.meta.env.BASE_URL)
@@ -143,9 +168,15 @@ export default {
       imageLoaded.value[number] = false
     }
 
+    const handleVectorError = (event) => {
+      // Hide vector if it doesn't exist
+      event.target.style.display = 'none'
+    }
+
     const openModal = (number) => {
       selectedModel.value = number
       showModal.value = true
+      isRotating.value = true // Auto-start rotation
       nextTick(() => {
         init3DViewer()
         load3DModel(number)
@@ -323,12 +354,14 @@ export default {
       isRotating,
       modelViewer,
       handleImageError,
+      handleVectorError,
       openModal,
       closeModal,
       toggleRotation,
       baseUrl,
       spacecraftImageUrl,
-      getImageUrl
+      getImageUrl,
+      getModelInfo
     }
   }
 }
@@ -679,24 +712,46 @@ export default {
   flex-direction: column;
   font-family: 'Inter', sans-serif;
   color: white;
+  position: relative;
+  overflow: hidden;
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 30px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.modal-header h2 {
-  font-size: 24px;
+/* Play/Pause Control - Top Left */
+.play-pause-control {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
   font-weight: bold;
-  margin: 0;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
 }
 
+.play-pause-control:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.control-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Close Button - Top Right */
 .close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
   background: none;
   border: none;
   color: white;
@@ -708,129 +763,115 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1001;
 }
 
 .close-btn:hover {
   opacity: 0.7;
 }
 
-.modal-body {
-  flex: 1;
-  display: flex;
-  padding: 30px;
-  gap: 30px;
-}
-
-.model-viewer {
+/* 3D Model Viewer - Centered */
+.model-viewer-container {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 60px 20px 20px 20px;
+}
+
+.model-viewer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 4px;
 }
 
-.modal-info {
-  width: 300px;
-  display: flex;
-  flex-direction: column;
+/* Bottom Info Section */
+.modal-footer {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.info-section {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.model-info-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  grid-template-rows: auto auto auto;
+  gap: 15px;
+  align-items: start;
 }
 
-.var-section {
-  padding-bottom: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.var-section .label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-  display: block;
+.model-name {
+  grid-column: 1 / 3;
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 1px;
   margin-bottom: 5px;
 }
 
-.var-section .value {
-  font-size: 18px;
-  font-weight: bold;
-  display: block;
+.model-details {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.detail-item {
   margin-bottom: 10px;
+}
+
+.detail-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  display: block;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.detail-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+}
+
+.pieces-count {
+  font-size: 24px;
 }
 
 .color-bar-modal {
   width: 120px;
   height: 8px;
   background: linear-gradient(to right, #A0A5A9, #6C6E68, #078BC9, #F5CD2F, #C91A09);
+  margin-top: 8px;
 }
 
-.description-section {
-  padding-bottom: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.description-section .label {
+.description-text {
+  grid-column: 2;
+  grid-row: 2 / 4;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-  display: block;
-  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.4;
+  margin: 0;
+  padding-left: 20px;
 }
 
-.pieces-section {
-  display: flex;
-  gap: 10px;
-  align-items: baseline;
-}
-
-.pieces-section .label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.pieces-section .value {
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.diagrams-section {
-  display: flex;
-  gap: 15px;
-}
-
-.diagram-placeholder {
-  width: 80px;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-
-.modal-controls {
-  padding: 20px 30px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  justify-content: center;
-}
-
-.play-pause-btn {
-  background: rgba(255, 255, 255, 0.1);
+.technical-drawing {
+  grid-column: 3;
+  grid-row: 1 / 4;
+  width: 120px;
+  height: 90px;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 10px 20px;
   border-radius: 4px;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.play-pause-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+.technical-drawing img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 @media (max-width: 768px) {
@@ -841,14 +882,27 @@ export default {
     max-height: none;
   }
   
-  .modal-body {
-    flex-direction: column;
-    padding: 20px;
-    gap: 20px;
+  .model-info-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 10px;
   }
   
-  .modal-info {
+  .model-name {
+    grid-column: 1;
+  }
+  
+  .description-text {
+    grid-column: 1;
+    grid-row: 3;
+    padding-left: 0;
+  }
+  
+  .technical-drawing {
+    grid-column: 1;
+    grid-row: 4;
     width: 100%;
+    height: 80px;
   }
 }
 </style>
