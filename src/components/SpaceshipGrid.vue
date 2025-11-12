@@ -103,7 +103,7 @@
             
             <!-- Technical Drawing -->
             <div class="technical-drawing">
-              <img :src="`${baseUrl}images/vectors/${selectedModel}.svg`" 
+              <img :src="`${baseUrl}images/models/${String(selectedModel).padStart(2, '0')}/vector.svg`" 
                    :alt="`Technical drawing of ${getModelInfo(selectedModel).name}`"
                    @error="handleVectorError">
             </div>
@@ -118,6 +118,7 @@
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import * as THREE from 'three'
 import { OBJLoader } from 'three-stdlib'
+import { MTLLoader } from 'three-stdlib'
 
 export default {
   name: 'SpaceshipGrid',
@@ -153,12 +154,16 @@ export default {
     // Computed properties for image paths
     const baseUrl = computed(() => import.meta.env.BASE_URL)
     const spacecraftImageUrl = computed(() => `${baseUrl.value}images/spacecraft.png`)
-    const getImageUrl = (number) => `${baseUrl.value}images/${number}.png`
+    const getImageUrl = (number) => {
+      const paddedNumber = String(number).padStart(2, '0')
+      return `${baseUrl.value}images/models/${paddedNumber}/${number}.png`
+    }
 
     const loadImages = () => {
       for (let i = 1; i <= 25; i++) {
         const img = new Image()
-        img.src = `${baseUrl.value}images/${i}.png`
+        const paddedNumber = String(i).padStart(2, '0')
+        img.src = `${baseUrl.value}images/models/${paddedNumber}/${i}.png`
         
         img.onload = () => {
           imageLoaded.value[i] = true
@@ -243,60 +248,108 @@ export default {
           scene.remove(model)
         }
 
-        if (number === 1) {
-          // Load actual OBJ file for model #1
-          const loader = new OBJLoader()
-          
-          loader.load(
-            `${baseUrl.value}images/3D/${number}.obj`,
-            (object) => {
-              // Successfully loaded OBJ file
-              model = object
-              
-              // Add materials to the loaded model
-              model.traverse((child) => {
-                if (child.isMesh) {
-                  child.material = new THREE.MeshLambertMaterial({ 
-                    color: 0xcccccc,
-                    side: THREE.DoubleSide
-                  })
-                  child.castShadow = true
-                  child.receiveShadow = true
-                }
-              })
-              
-              // Scale and position the model
-              const box = new THREE.Box3().setFromObject(model)
-              const size = box.getSize(new THREE.Vector3())
-              const maxDim = Math.max(size.x, size.y, size.z)
-              const scale = 2 / maxDim // Scale to fit in viewport
-              model.scale.set(scale, scale, scale)
-              
-              // Center the model
-              const center = box.getCenter(new THREE.Vector3())
-              model.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
-              
-              scene.add(model)
-              console.log(`Successfully loaded 3D model: /images/3D/${number}.obj`)
-            },
-            (progress) => {
-              console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%')
-            },
-            (error) => {
-              console.error('Error loading OBJ file:', error)
-              // Fallback to cube if OBJ fails to load
-              createFallbackCube(number)
-            }
-          )
-        } else {
-          // Use placeholder cube for other models
-          createFallbackCube(number)
-        }
+        const paddedNumber = String(number).padStart(2, '0')
+        
+        // First, try to load MTL file, then OBJ
+        const mtlLoader = new MTLLoader()
+        
+        mtlLoader.load(
+          `${baseUrl.value}images/models/${paddedNumber}/${number}.mtl`,
+          (materials) => {
+            // MTL loaded successfully - use materials with OBJ
+            materials.preload()
+            
+            const objLoader = new OBJLoader()
+            objLoader.setMaterials(materials)
+            
+            objLoader.load(
+              `${baseUrl.value}images/models/${paddedNumber}/${number}.obj`,
+              (object) => {
+                model = object
+                
+                // Scale and position the model
+                const box = new THREE.Box3().setFromObject(model)
+                const size = box.getSize(new THREE.Vector3())
+                const maxDim = Math.max(size.x, size.y, size.z)
+                const scale = 2 / maxDim
+                model.scale.set(scale, scale, scale)
+                
+                // Center the model
+                const center = box.getCenter(new THREE.Vector3())
+                model.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
+                
+                // Add shadows
+                model.traverse((child) => {
+                  if (child.isMesh) {
+                    child.castShadow = true
+                    child.receiveShadow = true
+                  }
+                })
+                
+                scene.add(model)
+                console.log(`Successfully loaded 3D model with materials: ${paddedNumber}/${number}`)
+              },
+              undefined,
+              (error) => {
+                console.error('Error loading OBJ file with materials:', error)
+                loadObjWithoutMaterials(paddedNumber, number)
+              }
+            )
+          },
+          undefined,
+          (error) => {
+            // MTL failed to load - try OBJ without materials
+            console.log('MTL file not found, loading OBJ without materials')
+            loadObjWithoutMaterials(paddedNumber, number)
+          }
+        )
         
       } catch (error) {
         console.error('Error loading 3D model:', error)
         createFallbackCube(number)
       }
+    }
+
+    const loadObjWithoutMaterials = (paddedNumber, number) => {
+      const objLoader = new OBJLoader()
+      
+      objLoader.load(
+        `${baseUrl.value}images/models/${paddedNumber}/${number}.obj`,
+        (object) => {
+          model = object
+          
+          // Add default materials to the loaded model
+          model.traverse((child) => {
+            if (child.isMesh) {
+              child.material = new THREE.MeshLambertMaterial({ 
+                color: 0xcccccc,
+                side: THREE.DoubleSide
+              })
+              child.castShadow = true
+              child.receiveShadow = true
+            }
+          })
+          
+          // Scale and position the model
+          const box = new THREE.Box3().setFromObject(model)
+          const size = box.getSize(new THREE.Vector3())
+          const maxDim = Math.max(size.x, size.y, size.z)
+          const scale = 2 / maxDim
+          model.scale.set(scale, scale, scale)
+          
+          // Center the model
+          const center = box.getCenter(new THREE.Vector3())
+          model.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
+          
+          scene.add(model)
+          console.log(`Successfully loaded 3D model without materials: ${paddedNumber}/${number}`)
+        },
+        undefined,
+        (error) => {
+          console.error('Error loading OBJ file:', error)
+          createFallbackCube(number)
+        }
+      )
     }
 
     const createFallbackCube = (number) => {
