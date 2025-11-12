@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../components/HomePage.vue'
 import SpaceshipGrid from '../components/SpaceshipGrid.vue'
+import BMW from '../components/BMW.vue'
 
 const routes = [
   {
@@ -17,6 +18,14 @@ const routes = [
     component: SpaceshipGrid,
     meta: {
       title: '25 or 01 - Spaceship Grid'
+    }
+  },
+  {
+    path: '/bmw',
+    name: 'BMW',
+    component: BMW,
+    meta: {
+      title: 'BMW - Interactive Portfolio Book'
     }
   },
   // Redirect any unknown routes to home

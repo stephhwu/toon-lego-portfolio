@@ -12,17 +12,34 @@
           Each project challenges conventional building techniques while maintaining the playful spirit of LEGO.
         </p>
         
-        <!-- Featured Project Card -->
-        <div class="featured-project">
-          <div class="project-preview">
-            <img :src="spacecraftImageUrl" alt="Featured Project" class="project-image" />
+        <!-- Featured Project Cards -->
+        <div class="featured-projects">
+          <!-- Spaceship Project -->
+          <div class="featured-project">
+            <div class="project-preview">
+              <img :src="spacecraftImageUrl" alt="Featured Project" class="project-image" />
+            </div>
+            <div class="project-info">
+              <h3>25 or 01</h3>
+              <p>How Many Spaceships are in a Spaceship?</p>
+              <router-link to="/spaceships" class="explore-btn">
+                EXPLORE PROJECT →
+              </router-link>
+            </div>
           </div>
-          <div class="project-info">
-            <h3>25 or 01</h3>
-            <p>How Many Spaceships are in a Spaceship?</p>
-            <router-link to="/spaceships" class="explore-btn">
-              EXPLORE PROJECT →
-            </router-link>
+          
+          <!-- BMW Project -->
+          <div class="featured-project">
+            <div class="project-preview bmw-preview">
+              <div class="book-icon">📖</div>
+            </div>
+            <div class="project-info">
+              <h3>BMW</h3>
+              <p>Interactive Design Portfolio Book</p>
+              <router-link to="/bmw" class="explore-btn">
+                OPEN BOOK →
+              </router-link>
+            </div>
           </div>
         </div>
       </div>
@@ -142,7 +159,13 @@ export default {
   max-width: 500px;
 }
 
-/* Featured Project Card */
+/* Featured Project Cards */
+.featured-projects {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
 .featured-project {
   background: rgba(55, 66, 74, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -166,6 +189,23 @@ export default {
   margin-bottom: 20px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
+}
+
+.bmw-preview {
+  background: linear-gradient(135deg, #5a47ce, #232323);
+  position: relative;
+  overflow: hidden;
+}
+
+.book-icon {
+  font-size: 64px;
+  opacity: 0.8;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 .project-image {
@@ -279,6 +319,10 @@ export default {
     padding: 40px 20px;
   }
   
+  .featured-projects {
+    gap: 20px;
+  }
+  
   .featured-project {
     padding: 20px;
   }
@@ -296,6 +340,10 @@ export default {
 @media (max-width: 480px) {
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .featured-projects {
+    gap: 15px;
   }
 }
 </style>
