@@ -1,5 +1,10 @@
 <template>
   <div class="spaceship-page">
+    <!-- Back Button -->
+    <router-link to="/" class="back-button">
+      ← BACK TO HOME
+    </router-link>
+    
     <div class="background-content" :class="{ 'modal-open': showModal }">
       <div class="background-grid"></div>
       
@@ -380,6 +385,30 @@ export default {
   min-height: 100vh;
   position: relative;
   padding-bottom: min(270px, 36vw, 36vh);
+}
+
+/* Back Button */
+.back-button {
+  position: fixed;
+  top: 30px;
+  left: 30px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-5px);
 }
 
 /* Background content wrapper */

@@ -1,17 +1,12 @@
 <template>
   <div id="app">
-    <SpaceshipGrid />
+    <router-view />
   </div>
 </template>
 
 <script>
-import SpaceshipGrid from './components/SpaceshipGrid.vue'
-
 export default {
-  name: 'App',
-  components: {
-    SpaceshipGrid
-  }
+  name: 'App'
 }
 </script>
 
