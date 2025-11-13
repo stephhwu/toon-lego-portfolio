@@ -65,44 +65,67 @@ const initThreeJS = () => {
   const aspect = window.innerWidth / window.innerHeight;
   const isMobile = window.innerWidth <= 800;
   camera = new THREE.PerspectiveCamera(
-    45,
+    25, // Further reduced from 30 to zoom in more on the magazine
     aspect,
     0.1,
     1000
   );
-  camera.position.set(-0.5, 1, isMobile ? 9 : 4);
+  camera.position.set(0, isMobile ? 8 : 6, 0); // Position directly above for aerial view
+  camera.lookAt(0, 0, 0); // Look straight down at the book
 
   // Renderer setup
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.setClearColor(0x232323);
+  
+  // Tone mapping and color settings to preserve background image quality
+  renderer.toneMapping = THREE.LinearToneMapping; // Use linear tone mapping for natural colors
+  renderer.toneMappingExposure = 0.6; // Reduce exposure to prevent washing out
+  renderer.outputColorSpace = THREE.SRGBColorSpace; // Ensure proper color space
+  
+  // Load desk background image
+  const textureLoader = new THREE.TextureLoader();
+  textureLoader.load('/images/bmw/desk.jpg', (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace; // Ensure proper color space
+    texture.flipY = false; // Prevent any unwanted flipping
+    scene.background = texture;
+  }, undefined, (error) => {
+    console.warn('Could not load desk.jpg, using fallback color');
+    renderer.setClearColor(0x232323);
+  });
   
   // Add canvas to DOM
   canvasContainer.value.appendChild(renderer.domElement);
 
-  // Environment and lighting
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+  // Environment and lighting - Balanced for background visibility
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); // Further reduced ambient light
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
-  directionalLight.position.set(2, 5, 2);
-  directionalLight.castShadow = true;
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // Increased directional light to compensate
+  directionalLight.position.set(0, 10, 3);
+  directionalLight.castShadow = true; // Re-enable for ground shadow only
   directionalLight.shadow.mapSize.width = 2048;
   directionalLight.shadow.mapSize.height = 2048;
+  directionalLight.shadow.camera.near = 0.1;
+  directionalLight.shadow.camera.far = 20;
+  directionalLight.shadow.camera.left = -5;
+  directionalLight.shadow.camera.right = 5;
+  directionalLight.shadow.camera.top = 5;
+  directionalLight.shadow.camera.bottom = -5;
   directionalLight.shadow.bias = -0.0001;
+  directionalLight.shadow.normalBias = 0.02;
   scene.add(directionalLight);
 
-  // Ground plane
-  const groundGeometry = new THREE.PlaneGeometry(100, 100);
+  // Ground plane for shadow
+  const groundGeometry = new THREE.PlaneGeometry(10, 10);
   const groundMaterial = new THREE.ShadowMaterial({ 
     transparent: true, 
-    opacity: 0.2 
+    opacity: 0.3
   });
   const ground = new THREE.Mesh(groundGeometry, groundMaterial);
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -1.5;
+  ground.position.y = -0.5; // Position closer to book for accurate shadow
   ground.receiveShadow = true;
   scene.add(ground);
 
@@ -111,7 +134,7 @@ const initThreeJS = () => {
   
   // Add floating animation to book
   const bookContainer = new THREE.Group();
-  bookContainer.rotation.x = -Math.PI / 4;
+  bookContainer.rotation.x = -Math.PI / 2; // Lay book completely flat
   bookContainer.add(book.group);
   scene.add(bookContainer);
 
@@ -177,19 +200,12 @@ const animate = () => {
   // Update book animation
   if (book) {
     book.update(delta);
-    
-    // Add floating animation
-    const elapsedTime = clock.getElapsedTime();
-    book.group.parent.position.y = Math.sin(elapsedTime * 0.5) * 0.1;
-    book.group.parent.rotation.z = Math.sin(elapsedTime * 0.3) * 0.05;
+    // Removed floating animation - book stays still
   }
   
-  // Add subtle camera movement
+  // Camera stays fixed for aerial view
   if (camera) {
-    const time = clock.getElapsedTime();
-    camera.position.x += (mousePosition.x * 0.5 - camera.position.x) * 0.05;
-    camera.position.y += (-mousePosition.y * 0.5 + 1 - camera.position.y) * 0.05;
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(0, 0, 0); // Always look down at the center
   }
 
   renderer.render(scene, camera);

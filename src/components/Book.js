@@ -5,6 +5,7 @@ import {
   Float32BufferAttribute,
   MathUtils,
   MeshStandardMaterial,
+  MeshBasicMaterial,
   Skeleton,
   SkinnedMesh,
   SRGBColorSpace,
@@ -56,8 +57,12 @@ const pictures = [
 
 export const pages = [
   {
-    front: "book-cover",
-    back: pictures[0],
+    front: "bmw-cover", // Cover when book is closed
+    back: "bmw-01", // First interior page
+  },
+  {
+    front: "bmw-02", // Second interior page
+    back: pictures[0], // Third page (fallback to DSC images)
   },
 ];
 
@@ -109,12 +114,12 @@ pageGeometry.setAttribute(
   new Float32BufferAttribute(skinWeights, 4)
 );
 
-const whiteColor = new Color("white");
+const whiteColor = new Color(1, 1, 1); // Pure white
 const emissiveColor = new Color("orange");
 
 const pageMaterials = [
   new MeshStandardMaterial({ color: whiteColor }),
-  new MeshStandardMaterial({ color: "#111" }),
+  new MeshStandardMaterial({ color: "#111" }), // Keep dark for page edges
   new MeshStandardMaterial({ color: whiteColor }),
   new MeshStandardMaterial({ color: whiteColor }),
 ];
@@ -132,57 +137,120 @@ export class Page {
     this.lastOpened = opened;
     
     this.group = new Group();
-    this.loadTextures();
-    this.createSkinnedMesh();
+    
+    // Load textures first, then create mesh
+    this.loadTextures().then(() => {
+      this.createSkinnedMesh();
+    });
   }
 
   async loadTextures() {
     const loader = new TextureLoader();
     
     try {
-      // Use BMW images if available, otherwise fallback to solid colors
+      // Load BMW images
       const frontPath = `/images/bmw/${this.front}.jpg`;
       const backPath = `/images/bmw/${this.back}.jpg`;
       
-      // Create placeholder textures with solid colors
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = 256;
-      const ctx = canvas.getContext('2d');
+      console.log(`Loading textures for page ${this.number}:`, frontPath, backPath);
       
-      // Front texture
-      ctx.fillStyle = this.number === 0 ? '#2D1B69' : '#f0f0f0';
-      ctx.fillRect(0, 0, 256, 256);
-      ctx.fillStyle = '#333';
-      ctx.font = '20px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(`Page ${this.number}`, 128, 128);
-      ctx.fillText(this.front, 128, 160);
+      // Load front texture
+      let frontTexture;
+      try {
+        frontTexture = await new Promise((resolve, reject) => {
+          loader.load(
+            frontPath, 
+            (texture) => {
+              console.log(`Successfully loaded front texture for page ${this.number}:`, frontPath);
+              resolve(texture);
+            }, 
+            undefined, 
+            (error) => {
+              console.error(`Failed to load front texture for page ${this.number}:`, frontPath, error);
+              reject(error);
+            }
+          );
+        });
+        frontTexture.colorSpace = SRGBColorSpace;
+        this.picture = frontTexture;
+        console.log(`✅ Successfully set front texture for page ${this.number} (${this.front})`);
+      } catch (error) {
+        // Create fallback for front texture
+        console.log(`❌ Creating fallback texture for front: ${this.front} - Error:`, error);
+        frontTexture = this.createFallbackTexture(this.front, this.number, 'Front');
+        this.picture = frontTexture;
+      }
       
-      const frontTexture = new CanvasTexture(canvas);
-      frontTexture.colorSpace = SRGBColorSpace;
-      this.picture = frontTexture;
-      
-      // Back texture
-      ctx.fillStyle = '#f8f8f8';
-      ctx.fillRect(0, 0, 256, 256);
-      ctx.fillStyle = '#333';
-      ctx.fillText(`Page ${this.number} Back`, 128, 128);
-      ctx.fillText(this.back, 128, 160);
-      
-      const backTexture = new CanvasTexture(canvas);
-      backTexture.colorSpace = SRGBColorSpace;
-      this.picture2 = backTexture;
+      // Load back texture
+      let backTexture;
+      try {
+        backTexture = await new Promise((resolve, reject) => {
+          loader.load(
+            backPath, 
+            (texture) => {
+              console.log(`Successfully loaded back texture for page ${this.number}:`, backPath);
+              resolve(texture);
+            }, 
+            undefined, 
+            (error) => {
+              console.error(`Failed to load back texture for page ${this.number}:`, backPath, error);
+              reject(error);
+            }
+          );
+        });
+        backTexture.colorSpace = SRGBColorSpace;
+        this.picture2 = backTexture;
+      } catch (error) {
+        // Create fallback for back texture
+        console.log(`❌ Creating fallback texture for back: ${this.back} - Error:`, error);
+        backTexture = this.createFallbackTexture(this.back, this.number, 'Back');
+        this.picture2 = backTexture;
+      }
       
       if (this.number === 0 || this.number === pages.length - 1) {
-        // Create roughness texture for cover
-        ctx.fillStyle = '#888';
-        ctx.fillRect(0, 0, 256, 256);
-        this.pictureRoughness = new CanvasTexture(canvas);
+        // For covers, we can add a slight roughness
+        this.pictureRoughness = null; // Will use default roughness
       }
       
     } catch (error) {
-      console.warn('Using fallback textures for book pages');
+      console.error(`Unexpected error loading textures for page ${this.number}:`, error);
+      
+      // Fallback to canvas textures as last resort
+      this.picture = this.createFallbackTexture(this.front, this.number, 'Front');
+      this.picture2 = this.createFallbackTexture(this.back, this.number, 'Back');
     }
+  }
+
+  createFallbackTexture(imageName, pageNumber, side) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    
+    // Create a pure white background
+    ctx.fillStyle = '#FFFFFF'; // Pure white for all pages
+    ctx.fillRect(0, 0, 512, 512);
+    
+    // Add some very light texture only if not the cover
+    if (pageNumber !== 0) {
+      ctx.fillStyle = '#F8F8F8'; // Very light grey texture
+      for (let i = 0; i < 30; i++) {
+        ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 1);
+      }
+    }
+    
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Page ${pageNumber} ${side}`, 256, 200);
+    ctx.font = '18px Arial';
+    ctx.fillText(imageName, 256, 240);
+    ctx.font = '14px Arial';
+    ctx.fillStyle = '#666';
+    ctx.fillText('(Image not found)', 256, 280);
+    
+    const texture = new CanvasTexture(canvas);
+    texture.colorSpace = SRGBColorSpace;
+    return texture;
   }
 
   createSkinnedMesh() {
@@ -207,29 +275,35 @@ export class Page {
 
     const materials = [
       ...pageMaterials,
+      // Front texture material - StandardMaterial optimized for both color and gloss
       new MeshStandardMaterial({
-        color: whiteColor,
         map: this.picture,
-        ...(this.number === 0
-          ? { roughnessMap: this.pictureRoughness }
-          : { roughness: 0.1 }),
-        emissive: emissiveColor,
-        emissiveIntensity: 0,
+        transparent: true,
+        roughness: 0.2, // Slightly increased roughness to reduce reflective glare
+        metalness: 0.0, // No metalness
+        color: new Color(1, 1, 1), // Pure white multiplier
+        // Reduced emissive properties to prevent washing out the background
+        emissive: new Color(0.05, 0.05, 0.05), // Much more subtle self-illumination
+        emissiveMap: this.picture, // Use the same texture as emissive
+        emissiveIntensity: 0.1, // Significantly reduced brightness boost
       }),
+      // Back texture material - Same approach
       new MeshStandardMaterial({
-        color: whiteColor,
         map: this.picture2,
-        ...(this.number === pages.length - 1
-          ? { roughnessMap: this.pictureRoughness }
-          : { roughness: 0.1 }),
-        emissive: emissiveColor,
-        emissiveIntensity: 0,
+        transparent: true,
+        roughness: 0.2, // Slightly increased roughness to reduce reflective glare
+        metalness: 0.0, // No metalness
+        color: new Color(1, 1, 1), // Pure white multiplier
+        // Reduced emissive properties to prevent washing out the background
+        emissive: new Color(0.05, 0.05, 0.05), // Much more subtle self-illumination
+        emissiveMap: this.picture2, // Use the same texture as emissive
+        emissiveIntensity: 0.1, // Significantly reduced brightness boost
       }),
     ];
 
     this.skinnedMesh = new SkinnedMesh(pageGeometry, materials);
-    this.skinnedMesh.castShadow = true;
-    this.skinnedMesh.receiveShadow = true;
+    this.skinnedMesh.castShadow = false; // Disable shadow casting from pages
+    this.skinnedMesh.receiveShadow = false; // Don't receive shadows on the pages
     this.skinnedMesh.frustumCulled = false;
     this.skinnedMesh.add(skeleton.bones[0]);
     this.skinnedMesh.bind(skeleton);
@@ -245,7 +319,7 @@ export class Page {
     this.opened = currentPage > this.number;
     this.bookClosed = currentPage === 0 || currentPage === pages.length;
 
-    const emissiveIntensity = this.highlighted ? 0.22 : 0;
+    const emissiveIntensity = this.highlighted ? 0.12 : 0; // Reduced highlight intensity
     if (this.skinnedMesh.material[4]) {
       this.skinnedMesh.material[4].emissiveIntensity = 
       this.skinnedMesh.material[5].emissiveIntensity = MathUtils.lerp(
@@ -323,7 +397,7 @@ export class Book {
     this.pages = [];
     
     this.createPages();
-    this.setupLighting();
+    // Removed setupLighting() - lighting handled in BMW.vue
   }
 
   createPages() {
