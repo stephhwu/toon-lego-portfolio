@@ -35,24 +35,10 @@ const PAGE_DEPTH = 0.003;
 const PAGE_SEGMENTS = 30;
 const SEGMENT_WIDTH = PAGE_WIDTH / PAGE_SEGMENTS;
 
-// Sample pages data - you can replace with your BMW content
+// Available BMW images - using only the images that actually exist
 const pictures = [
-  "DSC00680",
-  "DSC00933", 
-  "DSC00966",
-  "DSC00983",
-  "DSC01011",
-  "DSC01040",
-  "DSC01064",
-  "DSC01071",
-  "DSC01103",
-  "DSC01145",
-  "DSC01420",
-  "DSC01461",
-  "DSC01489",
-  "DSC02031",
-  "DSC02064",
-  "DSC02069",
+  "bmw-01",
+  "bmw-02",
 ];
 
 export const pages = [
@@ -62,21 +48,13 @@ export const pages = [
   },
   {
     front: "bmw-02", // Second interior page
-    back: pictures[0], // Third page (fallback to DSC images)
+    back: "bmw-01", // Reuse available images
+  },
+  {
+    front: "bmw-02", // Third page
+    back: "bmw-cover", // Back cover
   },
 ];
-
-for (let i = 1; i < pictures.length - 1; i += 2) {
-  pages.push({
-    front: pictures[i % pictures.length],
-    back: pictures[(i + 1) % pictures.length],
-  });
-}
-
-pages.push({
-  front: pictures[pictures.length - 1],
-  back: "book-back",
-});
 
 // Create page geometry
 const pageGeometry = new BoxGeometry(
@@ -148,11 +126,13 @@ export class Page {
     const loader = new TextureLoader();
     
     try {
-      // Load BMW images
-      const frontPath = `/images/bmw/${this.front}.jpg`;
-      const backPath = `/images/bmw/${this.back}.jpg`;
+      // For GitHub Pages, try both relative and absolute paths
+      const basePath = window.location.hostname === 'localhost' ? '' : '/toon-lego-portfolio';
+      const frontPath = `${basePath}/images/bmw/${this.front}.jpg`;
+      const backPath = `${basePath}/images/bmw/${this.back}.jpg`;
       
       console.log(`Loading textures for page ${this.number}:`, frontPath, backPath);
+      console.log(`Current hostname: ${window.location.hostname}`);
       
       // Load front texture
       let frontTexture;
@@ -161,39 +141,60 @@ export class Page {
           loader.load(
             frontPath, 
             (texture) => {
-              console.log(`Successfully loaded front texture for page ${this.number}:`, frontPath);
+              console.log(`✅ Successfully loaded front texture for page ${this.number}:`, frontPath);
               resolve(texture);
             }, 
             undefined, 
             (error) => {
-              console.error(`Failed to load front texture for page ${this.number}:`, frontPath, error);
+              console.error(`❌ Failed to load front texture for page ${this.number}:`, frontPath, error);
               reject(error);
             }
           );
         });
         frontTexture.colorSpace = SRGBColorSpace;
         this.picture = frontTexture;
-        console.log(`✅ Successfully set front texture for page ${this.number} (${this.front})`);
       } catch (error) {
-        // Create fallback for front texture
-        console.log(`❌ Creating fallback texture for front: ${this.front} - Error:`, error);
-        frontTexture = this.createFallbackTexture(this.front, this.number, 'Front');
-        this.picture = frontTexture;
+        // Try fallback path without base path
+        try {
+          const fallbackPath = `/images/bmw/${this.front}.jpg`;
+          console.log(`Trying fallback path: ${fallbackPath}`);
+          frontTexture = await new Promise((resolve, reject) => {
+            loader.load(
+              fallbackPath, 
+              (texture) => {
+                console.log(`✅ Successfully loaded front texture with fallback for page ${this.number}:`, fallbackPath);
+                resolve(texture);
+              }, 
+              undefined, 
+              (error) => {
+                console.error(`❌ Fallback also failed for page ${this.number}:`, fallbackPath, error);
+                reject(error);
+              }
+            );
+          });
+          frontTexture.colorSpace = SRGBColorSpace;
+          this.picture = frontTexture;
+        } catch (fallbackError) {
+          // Create canvas fallback
+          console.log(`❌ Creating canvas fallback texture for front: ${this.front}`);
+          frontTexture = this.createFallbackTexture(this.front, this.number, 'Front');
+          this.picture = frontTexture;
+        }
       }
       
-      // Load back texture
+      // Load back texture with same fallback logic
       let backTexture;
       try {
         backTexture = await new Promise((resolve, reject) => {
           loader.load(
             backPath, 
             (texture) => {
-              console.log(`Successfully loaded back texture for page ${this.number}:`, backPath);
+              console.log(`✅ Successfully loaded back texture for page ${this.number}:`, backPath);
               resolve(texture);
             }, 
             undefined, 
             (error) => {
-              console.error(`Failed to load back texture for page ${this.number}:`, backPath, error);
+              console.error(`❌ Failed to load back texture for page ${this.number}:`, backPath, error);
               reject(error);
             }
           );
@@ -201,15 +202,32 @@ export class Page {
         backTexture.colorSpace = SRGBColorSpace;
         this.picture2 = backTexture;
       } catch (error) {
-        // Create fallback for back texture
-        console.log(`❌ Creating fallback texture for back: ${this.back} - Error:`, error);
-        backTexture = this.createFallbackTexture(this.back, this.number, 'Back');
-        this.picture2 = backTexture;
-      }
-      
-      if (this.number === 0 || this.number === pages.length - 1) {
-        // For covers, we can add a slight roughness
-        this.pictureRoughness = null; // Will use default roughness
+        // Try fallback path
+        try {
+          const fallbackPath = `/images/bmw/${this.back}.jpg`;
+          console.log(`Trying fallback path: ${fallbackPath}`);
+          backTexture = await new Promise((resolve, reject) => {
+            loader.load(
+              fallbackPath, 
+              (texture) => {
+                console.log(`✅ Successfully loaded back texture with fallback for page ${this.number}:`, fallbackPath);
+                resolve(texture);
+              }, 
+              undefined, 
+              (error) => {
+                console.error(`❌ Fallback also failed for page ${this.number}:`, fallbackPath, error);
+                reject(error);
+              }
+            );
+          });
+          backTexture.colorSpace = SRGBColorSpace;
+          this.picture2 = backTexture;
+        } catch (fallbackError) {
+          // Create canvas fallback
+          console.log(`❌ Creating canvas fallback texture for back: ${this.back}`);
+          backTexture = this.createFallbackTexture(this.back, this.number, 'Back');
+          this.picture2 = backTexture;
+        }
       }
       
     } catch (error) {

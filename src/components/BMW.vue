@@ -58,6 +58,14 @@ let mousePosition = { x: 0, y: 0 };
 let hoveredPage = -1;
 
 const initThreeJS = () => {
+  // Set dynamic background image for the container
+  const basePath = window.location.hostname === 'localhost' ? '' : '/toon-lego-portfolio';
+  const deskImageUrl = `${basePath}/images/bmw/desk.jpg`;
+  
+  if (canvasContainer.value && canvasContainer.value.parentElement) {
+    canvasContainer.value.parentElement.style.backgroundImage = `url('${deskImageUrl}')`;
+  }
+
   // Scene setup
   scene = new THREE.Scene();
   
@@ -86,13 +94,33 @@ const initThreeJS = () => {
   
   // Load desk background image
   const textureLoader = new THREE.TextureLoader();
-  textureLoader.load('/images/bmw/desk.jpg', (texture) => {
+  
+  // Use the basePath already declared above
+  const deskImagePath = `${basePath}/images/bmw/desk.jpg`;
+  
+  console.log(`Loading desk background from: ${deskImagePath}`);
+  
+  textureLoader.load(deskImagePath, (texture) => {
     texture.colorSpace = THREE.SRGBColorSpace; // Ensure proper color space
     texture.flipY = false; // Prevent any unwanted flipping
     scene.background = texture;
+    console.log('✅ Successfully loaded desk.jpg background');
   }, undefined, (error) => {
-    console.warn('Could not load desk.jpg, using fallback color');
-    renderer.setClearColor(0x232323);
+    console.warn('Could not load desk.jpg from:', deskImagePath);
+    
+    // Try fallback path
+    const fallbackPath = '/images/bmw/desk.jpg';
+    console.log('Trying fallback path:', fallbackPath);
+    
+    textureLoader.load(fallbackPath, (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.flipY = false;
+      scene.background = texture;
+      console.log('✅ Successfully loaded desk.jpg with fallback');
+    }, undefined, (fallbackError) => {
+      console.warn('Fallback also failed, using default background color');
+      renderer.setClearColor(0x232323);
+    });
   });
   
   // Add canvas to DOM

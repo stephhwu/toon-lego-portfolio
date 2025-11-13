@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug BMW Images</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .image-test { margin: 20px 0; }
+        img { max-width: 300px; height: auto; margin: 10px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>BMW Image Loading Test</h1>
+    <p>This page tests if all BMW images are accessible.</p>
+    
+    <div class="image-test">
+        <h2>Available BMW Images</h2>
+        <div>
+            <h3>bmw-cover.jpg</h3>
+            <img src="./images/bmw/bmw-cover.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'" />
+            <div class="error" style="display:none">❌ Failed to load bmw-cover.jpg</div>
+        </div>
+        
+        <div>
+            <h3>bmw-01.jpg</h3>
+            <img src="./images/bmw/bmw-01.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'" />
+            <div class="error" style="display:none">❌ Failed to load bmw-01.jpg</div>
+        </div>
+        
+        <div>
+            <h3>bmw-02.jpg</h3>
+            <img src="./images/bmw/bmw-02.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'" />
+            <div class="error" style="display:none">❌ Failed to load bmw-02.jpg</div>
+        </div>
+        
+        <div>
+            <h3>desk.jpg</h3>
+            <img src="./images/bmw/desk.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'" />
+            <div class="error" style="display:none">❌ Failed to load desk.jpg</div>
+        </div>
+    </div>
+    
+    <div class="image-test">
+        <h2>Current Environment Info</h2>
+        <p id="hostname"></p>
+        <p id="pathname"></p>
+        <p id="origin"></p>
+    </div>
+    
+    <script>
+        document.getElementById('hostname').textContent = `Hostname: ${window.location.hostname}`;
+        document.getElementById('pathname').textContent = `Pathname: ${window.location.pathname}`;
+        document.getElementById('origin').textContent = `Origin: ${window.location.origin}`;
+        
+        // Test image paths programmatically
+        const testImages = ['bmw-cover', 'bmw-01', 'bmw-02', 'desk'];
+        
+        testImages.forEach(imageName => {
+            const img = new Image();
+            img.onload = () => console.log(`✅ ${imageName}.jpg loaded successfully`);
+            img.onerror = () => console.log(`❌ ${imageName}.jpg failed to load`);
+            img.src = `./images/bmw/${imageName}.jpg`;
+        });
+    </script>
+</body>
+</html>
